@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智慧理財記帳本</title>
+    <title>Sam & Even 的理財記帳</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -54,7 +54,7 @@
                     </div>
                     <div>
                         <h1 class="text-xs text-indigo-200">智慧理財記帳</h1>
-                        <p class="text-sm font-semibold">資產看板</p>
+                        <p class="text-sm font-semibold">Sam & Even 的理財記帳</p>
                     </div>
                 </div>
                 
@@ -62,8 +62,8 @@
                 <div class="flex items-center gap-2">
                     <select id="member-filter" class="bg-indigo-500/80 text-white border border-indigo-400/40 text-xs rounded-full px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-white">
                         <option value="all">👥 全部成員</option>
-                        <option value="男主人">👨 男主人</option>
-                        <option value="女主人">👩 女主人</option>
+                        <option value="Sam">👨 Sam</option>
+                        <option value="Even">👩 Even</option>
                     </select>
                     <button id="add-btn" class="bg-white text-indigo-600 px-3 py-1.5 rounded-full text-xs font-bold shadow hover:bg-indigo-50 transition active:scale-95 flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> 記一筆
@@ -170,6 +170,59 @@
                 </div>
             </section>
 
+            <!-- 頁面 4: 設定頁面 -->
+            <section id="page-settings" class="space-y-4 hidden">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5 border-b pb-2">
+                        <i class="fa-solid fa-sliders text-indigo-500"></i> 系統設定與管理
+                    </h2>
+
+                    <!-- 成員暱稱設定 -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-700">成員名稱自訂</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[11px] text-slate-400 block mb-1">👨 成員 1 顯示名稱</span>
+                                <input type="text" id="setting-member1" value="Sam" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-slate-400 block mb-1">👩 成員 2 顯示名稱</span>
+                                <input type="text" id="setting-member2" value="Even" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <button id="save-settings-btn" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow transition active:scale-95">
+                            儲存成員稱呼
+                        </button>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <!-- 每月預算警示上限 -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-700">本月支出預算提醒</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-slate-400 text-xs font-bold">NT$</span>
+                            <input type="number" id="setting-budget" placeholder="未設定上限" class="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <!-- 資料管理 -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-700">資料管理</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="reset-demo-btn" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition active:scale-95">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> 重置範例資料
+                            </button>
+                            <button id="clear-all-btn" class="py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-xl text-xs transition active:scale-95">
+                                <i class="fa-solid fa-trash-can mr-1"></i> 清空所有紀錄
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
 
         <!-- 底部導覽列 Navigation Bar -->
@@ -189,7 +242,7 @@
                 <i class="fa-solid fa-vault text-lg"></i>
                 <span class="text-[10px] font-medium">投資</span>
             </button>
-            <button id="settings-btn" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-500">
+            <button data-target="page-settings" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-500">
                 <i class="fa-solid fa-sliders text-lg"></i>
                 <span class="text-[10px] font-medium">設定</span>
             </button>
@@ -221,8 +274,8 @@
                         <div class="col-span-2">
                             <label class="block text-xs text-slate-500 mb-1 font-medium">歸屬成員</label>
                             <select id="entry-member" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
-                                <option value="男主人">👨 男主人</option>
-                                <option value="女主人">👩 女主人</option>
+                                <option value="Sam">👨 Sam</option>
+                                <option value="Even">👩 Even</option>
                             </select>
                         </div>
                         <div class="col-span-3">
@@ -298,14 +351,21 @@
 
     <!-- JavaScript 應用邏輯 -->
     <script>
-        // 預設示範資料 (更新成員為男主人與女主人)
-        let records = [
-            { id: 1, type: 'expense', member: '男主人', amount: 120, category: '餐飲食品', note: '午餐牛肉麵', date: '2026-11-09' },
-            { id: 2, type: 'expense', member: '女主人', amount: 55, category: '交通出行', note: '捷運車資', date: '2026-11-09' },
-            { id: 3, type: 'income', member: '男主人', amount: 45000, category: '薪資收入', note: '11月薪水', date: '2026-11-05' },
-            { id: 4, type: 'investment', member: '男主人', amount: 15000, name: '台積電 (2330)', action: 'buy', currentPrice: 16500, note: '定期定額', date: '2026-11-01' },
-            { id: 5, type: 'investment', member: '女主人', amount: 10000, name: '元大高股息 (0056)', action: 'buy', currentPrice: 10800, note: '買進持有', date: '2026-10-25' }
+        // 預設示範資料 (更新成員為 Sam 與 Even)
+        let memberNames = {
+            m1: 'Sam',
+            m2: 'Even'
+        };
+
+        let defaultRecords = [
+            { id: 1, type: 'expense', member: 'Sam', amount: 120, category: '餐飲食品', note: '午餐牛肉麵', date: '2026-11-09' },
+            { id: 2, type: 'expense', member: 'Even', amount: 55, category: '交通出行', note: '捷運車資', date: '2026-11-09' },
+            { id: 3, type: 'income', member: 'Sam', amount: 45000, category: '薪資收入', note: '11月薪水', date: '2026-11-05' },
+            { id: 4, type: 'investment', member: 'Sam', amount: 15000, name: '台積電 (2330)', action: 'buy', currentPrice: 16500, note: '定期定額', date: '2026-11-01' },
+            { id: 5, type: 'investment', member: 'Even', amount: 10000, name: '元大高股息 (0056)', action: 'buy', currentPrice: 10800, note: '買進持有', date: '2026-10-25' }
         ];
+
+        let records = [...defaultRecords];
 
         let currentMemberFilter = 'all';
         let expenseChart = null;
@@ -325,8 +385,275 @@
             initTabs();
             initModalEvents();
             initTypeSwitch();
+            initSettingsEvents();
             renderApp();
         };
+
+        // 初始化 Modal 彈窗事件
+        function initModalEvents() {
+            const modal = document.getElementById('entry-modal');
+            const addBtn = document.getElementById('add-btn');
+            const centerAddBtn = document.getElementById('center-add-btn');
+            const closeModalBtn = document.getElementById('close-modal');
+            const recordForm = document.getElementById('record-form');
+
+            const openModal = () => {
+                modal.classList.remove('hidden');
+            };
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+
+            if (addBtn) addBtn.addEventListener('click', openModal);
+            if (centerAddBtn) centerAddBtn.addEventListener('click', openModal);
+            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+
+            // 點擊背景遮罩關閉
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // 新增交易表單提交
+            recordForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const type = document.getElementById('entry-type').value;
+                const member = document.getElementById('entry-member').value;
+                const amount = parseFloat(document.getElementById('entry-amount').value) || 0;
+                const category = document.getElementById('entry-category').value;
+                const date = document.getElementById('entry-date').value;
+                const note = document.getElementById('entry-note').value;
+
+                let newRecord = {
+                    id: Date.now(),
+                    type,
+                    member,
+                    amount,
+                    date,
+                    note
+                };
+
+                if (type === 'investment') {
+                    const name = document.getElementById('invest-name').value || '未具名投資';
+                    const action = document.getElementById('invest-action').value;
+                    const price = parseFloat(document.getElementById('invest-price').value) || amount;
+                    newRecord.name = name;
+                    newRecord.action = action;
+                    newRecord.currentPrice = price;
+                } else {
+                    newRecord.category = category;
+                }
+
+                records.unshift(newRecord);
+                closeModal();
+                recordForm.reset();
+                document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+                showToast('紀錄已成功新增！');
+                renderApp();
+            });
+        }
+
+        // 渲染整體 App 資料與 UI
+        function renderApp() {
+            // 篩選符合當前選取成員的紀錄
+            const filteredRecords = records.filter(r => {
+                if (currentMemberFilter === 'all') return true;
+                return r.member === currentMemberFilter;
+            });
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let investCost = 0;
+            let investMarketValue = 0;
+
+            const portfolioMap = {};
+
+            filteredRecords.forEach(r => {
+                if (r.type === 'income') {
+                    totalIncome += r.amount;
+                } else if (r.type === 'expense') {
+                    totalExpense += r.amount;
+                } else if (r.type === 'investment') {
+                    if (r.action === 'buy') {
+                        investCost += r.amount;
+                        investMarketValue += (r.currentPrice || r.amount);
+                    } else if (r.action === 'sell') {
+                        investCost -= r.amount;
+                        investMarketValue -= (r.currentPrice || r.amount);
+                    } else if (r.action === 'dividend') {
+                        totalIncome += r.amount;
+                    }
+
+                    if (r.name) {
+                        if (!portfolioMap[r.name]) {
+                            portfolioMap[r.name] = { cost: 0, val: 0, member: r.member };
+                        }
+                        if (r.action === 'buy') {
+                            portfolioMap[r.name].cost += r.amount;
+                            portfolioMap[r.name].val += (r.currentPrice || r.amount);
+                        }
+                    }
+                }
+            });
+
+            const investPnl = investMarketValue - investCost;
+            const netWorth = (totalIncome - totalExpense) + investMarketValue;
+
+            // 更新頂部看板數字
+            document.getElementById('total-net-worth').textContent = `NT$ ${netWorth.toLocaleString()}`;
+            document.getElementById('month-income').textContent = `+${totalIncome.toLocaleString()}`;
+            document.getElementById('month-expense').textContent = `-${totalExpense.toLocaleString()}`;
+            document.getElementById('invest-pnl').textContent = `${investPnl >= 0 ? '+' : ''}${investPnl.toLocaleString()}`;
+
+            document.getElementById('invest-cost').textContent = `NT$ ${investCost.toLocaleString()}`;
+            document.getElementById('invest-market-value').textContent = `NT$ ${investMarketValue.toLocaleString()}`;
+            document.getElementById('invest-count').textContent = `${Object.keys(portfolioMap).length} 筆持股`;
+
+            // 渲染最近帳務列表
+            const recentContainer = document.getElementById('recent-transactions');
+            recentContainer.innerHTML = '';
+            if (filteredRecords.length === 0) {
+                recentContainer.innerHTML = '<div class="text-center py-6 text-xs text-slate-400">目前尚無帳務紀錄</div>';
+            } else {
+                filteredRecords.slice(0, 10).forEach(item => {
+                    const isIncome = item.type === 'income';
+                    const isInvest = item.type === 'investment';
+                    
+                    let amountColor = 'text-rose-500';
+                    let amountSign = '-';
+                    if (isIncome) {
+                        amountColor = 'text-emerald-500';
+                        amountSign = '+';
+                    } else if (isInvest) {
+                        amountColor = 'text-indigo-600';
+                        amountSign = '';
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full ${isIncome ? 'bg-emerald-100 text-emerald-600' : isInvest ? 'bg-indigo-100 text-indigo-600' : 'bg-rose-100 text-rose-500'} flex items-center justify-center text-xs font-bold">
+                                <i class="fa-solid ${isIncome ? 'fa-arrow-down' : isInvest ? 'fa-chart-line' : 'fa-basket-shopping'}"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    ${item.name || item.category || '一般收支'}
+                                    <span class="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-600 rounded-md font-normal">${item.member}</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400">${item.date} ${item.note ? '• ' + item.note : ''}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-bold ${amountColor}">${amountSign}NT$ ${item.amount.toLocaleString()}</div>
+                            <button onclick="deleteRecord(${item.id})" class="text-[10px] text-slate-400 hover:text-rose-500 transition">刪除</button>
+                        </div>
+                    `;
+                    recentContainer.appendChild(div);
+                });
+            }
+
+            // 渲染投資持股明細頁面
+            const portfolioContainer = document.getElementById('portfolio-list');
+            portfolioContainer.innerHTML = '';
+            const portfolioKeys = Object.keys(portfolioMap);
+            if (portfolioKeys.length === 0) {
+                portfolioContainer.innerHTML = '<div class="text-center py-6 text-xs text-slate-400">目前尚無持有投資項目</div>';
+            } else {
+                portfolioKeys.forEach(key => {
+                    const p = portfolioMap[key];
+                    const diff = p.val - p.cost;
+                    const roi = p.cost > 0 ? ((diff / p.cost) * 100).toFixed(2) : 0;
+                    
+                    const div = document.createElement('div');
+                    div.className = 'p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center';
+                    div.innerHTML = `
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                ${key}
+                                <span class="text-[10px] px-1.5 py-0.2 bg-indigo-50 text-indigo-600 rounded-md font-normal">${p.member}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400">投入成本: NT$ ${p.cost.toLocaleString()}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-bold text-slate-800">現值: NT$ ${p.val.toLocaleString()}</div>
+                            <div class="text-[11px] font-bold ${diff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">
+                                ${diff >= 0 ? '+' : ''}${diff.toLocaleString()} (${roi}%)
+                            </div>
+                        </div>
+                    `;
+                    portfolioContainer.appendChild(div);
+                });
+            }
+
+            renderCharts();
+        }
+
+        // 繪製與更新統計圖表
+        function renderCharts() {
+            const filteredRecords = records.filter(r => currentMemberFilter === 'all' || r.member === currentMemberFilter);
+            
+            // 1. 支出圖表資料
+            const expenseMap = {};
+            filteredRecords.filter(r => r.type === 'expense').forEach(r => {
+                expenseMap[r.category] = (expenseMap[r.category] || 0) + r.amount;
+            });
+
+            const expLabels = Object.keys(expenseMap);
+            const expData = Object.values(expenseMap);
+
+            const ctxExp = document.getElementById('expenseChart');
+            if (ctxExp) {
+                if (expenseChart) expenseChart.destroy();
+                expenseChart = new Chart(ctxExp, {
+                    type: 'doughnut',
+                    data: {
+                        labels: expLabels.length ? expLabels : ['暫無資料'],
+                        datasets: [{
+                            data: expData.length ? expData : [1],
+                            backgroundColor: ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+
+            // 2. 投資組合圖表資料
+            const assetMap = {};
+            filteredRecords.filter(r => r.type === 'investment' && r.action === 'buy').forEach(r => {
+                assetMap[r.name || '其他投資'] = (assetMap[r.name || '其他投資'] || 0) + (r.currentPrice || r.amount);
+            });
+
+            const assetLabels = Object.keys(assetMap);
+            const assetData = Object.values(assetMap);
+
+            const ctxAsset = document.getElementById('assetChart');
+            if (ctxAsset) {
+                if (assetChart) assetChart.destroy();
+                assetChart = new Chart(ctxAsset, {
+                    type: 'pie',
+                    data: {
+                        labels: assetLabels.length ? assetLabels : ['暫無投資'],
+                        datasets: [{
+                            data: assetData.length ? assetData : [1],
+                            backgroundColor: ['#6366f1', '#06b6d4', '#10b981', '#ec4899', '#f59e0b']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        }
 
         // 底部導覽頁籤切換邏輯
         function initTabs() {
@@ -334,7 +661,8 @@
             const pages = [
                 document.getElementById('page-dashboard'),
                 document.getElementById('page-analytics'),
-                document.getElementById('page-portfolio')
+                document.getElementById('page-portfolio'),
+                document.getElementById('page-settings')
             ];
 
             navItems.forEach(item => {
@@ -381,255 +709,44 @@
             }
         }
 
-        // 取得目前篩選後的紀錄
-        function getFilteredRecords() {
-            if (currentMemberFilter === 'all') return records;
-            return records.filter(r => (r.member || '男主人') === currentMemberFilter);
-        }
+        // 初始化設定頁面事件
+        function initSettingsEvents() {
+            // 儲存成員暱稱
+            document.getElementById('save-settings-btn').addEventListener('click', () => {
+                const m1Val = document.getElementById('setting-member1').value.trim() || 'Sam';
+                const m2Val = document.getElementById('setting-member2').value.trim() || 'Even';
 
-        // 格式化金額顯示
-        function formatMoney(amount) {
-            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', maximumFractionDigits: 0 }).format(amount);
-        }
+                memberNames.m1 = m1Val;
+                memberNames.m2 = m2Val;
 
-        // 渲染整體 UI
-        function renderApp() {
-            updateDashboard();
-            renderTransactions();
-            renderPortfolio();
-            renderCharts();
-        }
+                // 更新選單文字
+                const filterSelect = document.getElementById('member-filter');
+                filterSelect.options[1].text = `👨 ${m1Val}`;
+                filterSelect.options[1].value = m1Val;
+                filterSelect.options[2].text = `👩 ${m2Val}`;
+                filterSelect.options[2].value = m2Val;
 
-        // 更新頂部總覽數值
-        function updateDashboard() {
-            const filtered = getFilteredRecords();
-            let totalIncome = 0;
-            let totalExpense = 0;
-            let investCost = 0;
-            let investMarketValue = 0;
+                const modalMemberSelect = document.getElementById('entry-member');
+                modalMemberSelect.options[0].text = `👨 ${m1Val}`;
+                modalMemberSelect.options[0].value = m1Val;
+                modalMemberSelect.options[1].text = `👩 ${m2Val}`;
+                modalMemberSelect.options[1].value = m2Val;
 
-            filtered.forEach(r => {
-                if (r.type === 'income') totalIncome += r.amount;
-                if (r.type === 'expense') totalExpense += r.amount;
-                if (r.type === 'investment') {
-                    if (r.action === 'buy') {
-                        investCost += r.amount;
-                        investMarketValue += (r.currentPrice || r.amount);
-                    } else if (r.action === 'sell') {
-                        investCost -= r.amount;
-                    }
-                }
+                showToast('已更新成員設定');
+                renderApp();
             });
 
-            const investPnL = investMarketValue - investCost;
-            const netWorth = (totalIncome - totalExpense) + investMarketValue;
-
-            document.getElementById('total-net-worth').textContent = formatMoney(netWorth);
-            document.getElementById('month-income').textContent = '+' + formatMoney(totalIncome).replace('NT$', '');
-            document.getElementById('month-expense').textContent = '-' + formatMoney(totalExpense).replace('NT$', '');
-            document.getElementById('invest-pnl').textContent = (investPnL >= 0 ? '+' : '') + formatMoney(investPnL).replace('NT$', '');
-            
-            document.getElementById('invest-cost').textContent = formatMoney(investCost);
-            document.getElementById('invest-market-value').textContent = formatMoney(investMarketValue);
-        }
-
-        // 渲染最近交易紀錄
-        function renderTransactions() {
-            const container = document.getElementById('recent-transactions');
-            container.innerHTML = '';
-
-            const filtered = getFilteredRecords();
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">目前尚無該成員的帳務紀錄</div>`;
-                return;
-            }
-
-            filtered.slice(0, 5).forEach(item => {
-                let iconClass = 'fa-tag text-slate-400';
-                let amountColor = 'text-slate-800';
-                let typeBadge = '';
-                let amountPrefix = '';
-
-                if (item.type === 'expense') {
-                    iconClass = 'fa-arrow-down text-rose-500 bg-rose-50';
-                    amountColor = 'text-rose-600';
-                    amountPrefix = '-';
-                } else if (item.type === 'income') {
-                    iconClass = 'fa-arrow-up text-emerald-500 bg-emerald-50';
-                    amountColor = 'text-emerald-600';
-                    amountPrefix = '+';
-                } else if (item.type === 'investment') {
-                    iconClass = 'fa-chart-line text-indigo-500 bg-indigo-50';
-                    amountColor = 'text-indigo-600';
-                    typeBadge = `<span class="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">投資</span>`;
-                }
-
-                const memberBadge = `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-normal mr-1">${item.member || '男主人'}</span>`;
-
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center p-2.5 rounded-xl hover:bg-slate-50 transition border border-slate-100/60';
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs ${iconClass.includes('bg-') ? iconClass.split(' ').pop() : 'bg-slate-100'}">
-                            <i class="fa-solid ${iconClass.split(' ')[0]} ${iconClass.split(' ')[1]}"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-800 flex items-center">
-                                ${memberBadge}
-                                ${item.type === 'investment' ? item.name : item.category}
-                                ${typeBadge}
-                            </div>
-                            <div class="text-[10px] text-slate-400">${item.date} ${item.note ? '• ' + item.note : ''}</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs font-bold ${amountColor}">${amountPrefix}${formatMoney(item.amount)}</div>
-                        <button onclick="deleteRecord(${item.id})" class="text-[10px] text-slate-300 hover:text-rose-500">刪除</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        // 渲染投資持股項目
-        function renderPortfolio() {
-            const container = document.getElementById('portfolio-list');
-            container.innerHTML = '';
-
-            const filtered = getFilteredRecords();
-            const investments = filtered.filter(r => r.type === 'investment');
-            document.getElementById('invest-count').textContent = `${investments.length} 筆持股`;
-
-            if (investments.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">目前尚無投資持股紀錄</div>`;
-                return;
-            }
-
-            investments.forEach(item => {
-                const cost = item.amount;
-                const marketVal = item.currentPrice || cost;
-                const pnl = marketVal - cost;
-                const roi = ((pnl / cost) * 100).toFixed(2);
-                const isPositive = pnl >= 0;
-
-                const card = document.createElement('div');
-                card.className = 'p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2';
-                card.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] bg-indigo-100 text-indigo-700 font-semibold px-1.5 py-0.5 rounded">${item.member || '男主人'}</span>
-                            <span class="text-xs font-bold text-slate-800">${item.name}</span>
-                        </div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                            ${isPositive ? '+' : ''}${roi}%
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-1 text-[11px]">
-                        <div>
-                            <span class="text-slate-400 block">投入成本</span>
-                            <span class="font-semibold text-slate-700">${formatMoney(cost)}</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 block">預估市值</span>
-                            <span class="font-semibold text-slate-700">${formatMoney(marketVal)}</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 block">未實現損益</span>
-                            <span class="font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}">${isPositive ? '+' : ''}${formatMoney(pnl)}</span>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // 渲染圖表 (Chart.js)
-        function renderCharts() {
-            const filtered = getFilteredRecords();
-
-            // 1. 支出圓餅圖
-            const expenseData = {};
-            filtered.filter(r => r.type === 'expense').forEach(r => {
-                expenseData[r.category] = (expenseData[r.category] || 0) + r.amount;
+            // 重置為預設範例資料
+            document.getElementById('reset-demo-btn').addEventListener('click', () => {
+                records = [...defaultRecords];
+                showToast('已恢復預設範例資料');
+                renderApp();
             });
 
-            const ctx1 = document.getElementById('expenseChart').getContext('2d');
-            if (expenseChart) expenseChart.destroy();
-            expenseChart = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(expenseData).length ? Object.keys(expenseData) : ['尚無資料'],
-                    datasets: [{
-                        data: Object.values(expenseData).length ? Object.values(expenseData) : [1],
-                        backgroundColor: ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#64748b']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
-                }
-            });
-
-            // 2. 資產投資分布圖
-            const investData = {};
-            filtered.filter(r => r.type === 'investment').forEach(r => {
-                investData[r.name] = (investData[r.name] || 0) + (r.currentPrice || r.amount);
-            });
-
-            const ctx2 = document.getElementById('assetChart').getContext('2d');
-            if (assetChart) assetChart.destroy();
-            assetChart = new Chart(ctx2, {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(investData).length ? Object.keys(investData) : ['尚無持股'],
-                    datasets: [{
-                        data: Object.values(investData).length ? Object.values(investData) : [1],
-                        backgroundColor: ['#6366f1', '#06b6d4', '#14b8a6', '#ec4899', '#eab308']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
-                }
-            });
-        }
-
-        // Modal 與類型按鈕事件
-        function initModalEvents() {
-            const modal = document.getElementById('entry-modal');
-            const openBtns = [document.getElementById('add-btn'), document.getElementById('center-add-btn')];
-            const closeBtn = document.getElementById('close-modal');
-            const form = document.getElementById('record-form');
-
-            openBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.remove('hidden')));
-            closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const type = document.getElementById('entry-type').value;
-                const member = document.getElementById('entry-member').value;
-                const amount = parseFloat(document.getElementById('entry-amount').value);
-                const date = document.getElementById('entry-date').value;
-                const note = document.getElementById('entry-note').value;
-
-                let newEntry = { id: Date.now(), type, member, amount, date, note };
-
-                if (type === 'investment') {
-                    newEntry.name = document.getElementById('invest-name').value || '未命名資產';
-                    newEntry.action = document.getElementById('invest-action').value;
-                    const priceInput = parseFloat(document.getElementById('invest-price').value);
-                    newEntry.currentPrice = isNaN(priceInput) ? amount : priceInput;
-                } else {
-                    newEntry.category = document.getElementById('entry-category').value;
-                }
-
-                records.unshift(newEntry);
-                form.reset();
-                document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
-                modal.classList.add('hidden');
-                
-                showToast(`已成功新增 ${member} 的紀錄！`);
+            // 清空所有紀錄
+            document.getElementById('clear-all-btn').addEventListener('click', () => {
+                records = [];
+                showToast('已清空所有紀錄');
                 renderApp();
             });
         }
@@ -676,6 +793,13 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0');
             }, 2500);
+        }
+
+        // 刪除帳務紀錄
+        function deleteRecord(id) {
+            records = records.filter(r => r.id !== id);
+            showToast('已成功刪除紀錄');
+            renderApp();
         }
     </script>
 </body>
