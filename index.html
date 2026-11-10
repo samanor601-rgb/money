@@ -349,9 +349,23 @@
 
     </div>
 
-    <!-- JavaScript 應用邏輯 -->
-    <script>
-        // 預設示範資料 (更新成員為 Sam 與 Even)
+    <!-- Firebase SDK 模組與應用程式主邏輯 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase 預設設定
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sam-even-finance-app';
+        
+        let app, db, auth;
+        let isCloudConnected = false;
+
+        // 預設示範資料
         let memberNames = {
             m1: 'Sam',
             m2: 'Even'
@@ -365,77 +379,113 @@
             { id: 5, type: 'investment', member: 'Even', amount: 10000, name: '元大高股息 (0056)', action: 'buy', currentPrice: 10800, note: '買進持有', date: '2026-10-25' }
         ];
 
-        let records = [];
-
+        let records = [...defaultRecords];
         let currentMemberFilter = 'all';
         let expenseChart = null;
         let assetChart = null;
 
-        // 從 localStorage 讀取資料
-        function loadStoredData() {
+        // 初始化 Firebase 與雲端即時同步
+        async function initFirebaseSync() {
             try {
-                const savedRecords = localStorage.getItem('sam_even_records');
-                if (savedRecords) {
-                    records = JSON.parse(savedRecords);
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // 進行身份認證
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    records = [...defaultRecords];
+                    await signInAnonymously(auth);
                 }
 
-                const savedMembers = localStorage.getItem('sam_even_members');
-                if (savedMembers) {
-                    memberNames = JSON.parse(savedMembers);
-                    updateMemberNamesUI();
-                }
-            } catch (e) {
-                console.error('無法讀取本地儲存資料:', e);
-                records = [...defaultRecords];
+                // 訂閱雲端資料庫更新 (遵守偶數層級路徑規範)
+                const docRef = doc(db, 'artifacts', appId, 'public_data', 'financeDoc');
+                onSnapshot(docRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
+                        if (data.records) records = data.records;
+                        if (data.memberNames) {
+                            memberNames = data.memberNames;
+                            updateMemberUI();
+                        }
+                        renderApp();
+                    } else {
+                        // 初始化雲端資料
+                        saveToCloud();
+                    }
+                    isCloudConnected = true;
+                }, (error) => {
+                    console.warn("Firestore 監聽失敗，改用本地儲存:", error);
+                    loadLocalData();
+                });
+
+            } catch (err) {
+                console.warn("Firebase 初始化異常:", err);
+                loadLocalData();
             }
         }
 
-        // 儲存資料至 localStorage
-        function saveData() {
-            try {
-                localStorage.setItem('sam_even_records', JSON.stringify(records));
-                localStorage.setItem('sam_even_members', JSON.stringify(memberNames));
-            } catch (e) {
-                console.error('無法儲存資料至本地:', e);
+        // 儲存資料至雲端（包含本地備份）
+        async function saveData() {
+            localStorage.setItem('sam_even_finance_records', JSON.stringify(records));
+            localStorage.setItem('sam_even_finance_members', JSON.stringify(memberNames));
+
+            if (isCloudConnected && db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public_data', 'financeDoc');
+                    await setDoc(docRef, {
+                        records: records,
+                        memberNames: memberNames,
+                        updatedAt: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.error("雲端同步失敗:", e);
+                }
             }
         }
 
-        // 更新成員 UI 選單
-        function updateMemberNamesUI() {
-            const m1Val = memberNames.m1;
-            const m2Val = memberNames.m2;
+        function saveToCloud() {
+            saveData();
+        }
 
-            document.getElementById('setting-member1').value = m1Val;
-            document.getElementById('setting-member2').value = m2Val;
+        // 本地讀取備份
+        function loadLocalData() {
+            const localRecs = localStorage.getItem('sam_even_finance_records');
+            const localMembers = localStorage.getItem('sam_even_finance_members');
+            if (localRecs) records = JSON.parse(localRecs);
+            if (localMembers) memberNames = JSON.parse(localMembers);
+            updateMemberUI();
+            renderApp();
+        }
 
+        // 更新成員選單介面
+        function updateMemberUI() {
             const filterSelect = document.getElementById('member-filter');
-            if (filterSelect) {
-                filterSelect.options[1].text = `👨 ${m1Val}`;
-                filterSelect.options[1].value = m1Val;
-                filterSelect.options[2].text = `👩 ${m2Val}`;
-                filterSelect.options[2].value = m2Val;
+            if (filterSelect && filterSelect.options.length >= 3) {
+                filterSelect.options[1].text = `👨 ${memberNames.m1}`;
+                filterSelect.options[1].value = memberNames.m1;
+                filterSelect.options[2].text = `👩 ${memberNames.m2}`;
+                filterSelect.options[2].value = memberNames.m2;
             }
 
             const modalMemberSelect = document.getElementById('entry-member');
-            if (modalMemberSelect) {
-                modalMemberSelect.options[0].text = `👨 ${m1Val}`;
-                modalMemberSelect.options[0].value = m1Val;
-                modalMemberSelect.options[1].text = `👩 ${m2Val}`;
-                modalMemberSelect.options[1].value = m2Val;
+            if (modalMemberSelect && modalMemberSelect.options.length >= 2) {
+                modalMemberSelect.options[0].text = `👨 ${memberNames.m1}`;
+                modalMemberSelect.options[0].value = memberNames.m1;
+                modalMemberSelect.options[1].text = `👩 ${memberNames.m2}`;
+                modalMemberSelect.options[1].value = memberNames.m2;
             }
+
+            const inputM1 = document.getElementById('setting-member1');
+            const inputM2 = document.getElementById('setting-member2');
+            if (inputM1) inputM1.value = memberNames.m1;
+            if (inputM2) inputM2.value = memberNames.m2;
         }
 
         // 初始化頁面與事件
         window.onload = function() {
-            // 設定日期預設值為今天
             document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
             
-            // 讀取本地儲存
-            loadStoredData();
-
-            // 成員篩選切換
             document.getElementById('member-filter').addEventListener('change', (e) => {
                 currentMemberFilter = e.target.value;
                 renderApp();
@@ -445,10 +495,12 @@
             initModalEvents();
             initTypeSwitch();
             initSettingsEvents();
-            renderApp();
+
+            // 啟動雲端同步功能
+            initFirebaseSync();
         };
 
-        // 初始化 Modal 彈窗事件
+        // Modal 彈窗與新增邏輯
         function initModalEvents() {
             const modal = document.getElementById('entry-modal');
             const addBtn = document.getElementById('add-btn');
@@ -456,24 +508,17 @@
             const closeModalBtn = document.getElementById('close-modal');
             const recordForm = document.getElementById('record-form');
 
-            const openModal = () => {
-                modal.classList.remove('hidden');
-            };
-
-            const closeModal = () => {
-                modal.classList.add('hidden');
-            };
+            const openModal = () => modal.classList.remove('hidden');
+            const closeModal = () => modal.classList.add('hidden');
 
             if (addBtn) addBtn.addEventListener('click', openModal);
             if (centerAddBtn) centerAddBtn.addEventListener('click', openModal);
             if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
 
-            // 點擊背景遮罩關閉
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeModal();
             });
 
-            // 新增交易表單提交
             recordForm.addEventListener('submit', (e) => {
                 e.preventDefault();
 
@@ -505,18 +550,25 @@
                 }
 
                 records.unshift(newRecord);
-                saveData(); // 自動儲存至 localStorage
+                saveData();
                 closeModal();
                 recordForm.reset();
                 document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
-                showToast('紀錄已成功儲存！');
+                showToast('紀錄已成功新增並同步至雲端！');
                 renderApp();
             });
         }
 
+        // 刪除帳務紀錄
+        window.deleteRecord = function(id) {
+            records = records.filter(r => r.id !== id);
+            saveData();
+            showToast('已成功刪除紀錄');
+            renderApp();
+        };
+
         // 渲染整體 App 資料與 UI
         function renderApp() {
-            // 篩選符合當前選取成員的紀錄
             const filteredRecords = records.filter(r => {
                 if (currentMemberFilter === 'all') return true;
                 return r.member === currentMemberFilter;
@@ -560,7 +612,6 @@
             const investPnl = investMarketValue - investCost;
             const netWorth = (totalIncome - totalExpense) + investMarketValue;
 
-            // 更新頂部看板數字
             document.getElementById('total-net-worth').textContent = `NT$ ${netWorth.toLocaleString()}`;
             document.getElementById('month-income').textContent = `+${totalIncome.toLocaleString()}`;
             document.getElementById('month-expense').textContent = `-${totalExpense.toLocaleString()}`;
@@ -614,7 +665,7 @@
                 });
             }
 
-            // 渲染投資持股明細頁面
+            // 渲染投資明細
             const portfolioContainer = document.getElementById('portfolio-list');
             portfolioContainer.innerHTML = '';
             const portfolioKeys = Object.keys(portfolioMap);
@@ -654,7 +705,6 @@
         function renderCharts() {
             const filteredRecords = records.filter(r => currentMemberFilter === 'all' || r.member === currentMemberFilter);
             
-            // 1. 支出圖表資料
             const expenseMap = {};
             filteredRecords.filter(r => r.type === 'expense').forEach(r => {
                 expenseMap[r.category] = (expenseMap[r.category] || 0) + r.amount;
@@ -684,7 +734,6 @@
                 });
             }
 
-            // 2. 投資組合圖表資料
             const assetMap = {};
             filteredRecords.filter(r => r.type === 'investment' && r.action === 'buy').forEach(r => {
                 assetMap[r.name || '其他投資'] = (assetMap[r.name || '其他投資'] || 0) + (r.currentPrice || r.amount);
@@ -715,7 +764,7 @@
             }
         }
 
-        // 底部導覽頁籤切換邏輯
+        // 頁籤切換
         function initTabs() {
             const navItems = document.querySelectorAll('.nav-item[data-target]');
             const pages = [
@@ -730,7 +779,6 @@
                     const targetId = item.getAttribute('data-target');
                     if (!targetId) return;
 
-                    // 切換頁面顯示
                     pages.forEach(page => {
                         if (page) {
                             if (page.id === targetId) {
@@ -741,7 +789,6 @@
                         }
                     });
 
-                    // 更新導覽列按鈕樣式
                     navItems.forEach(nav => {
                         if (nav.getAttribute('data-target') === targetId) {
                             nav.classList.remove('text-slate-400');
@@ -752,14 +799,12 @@
                         }
                     });
 
-                    // 重新渲染圖表 (防止畫布尺寸在隱藏狀態下繪製異常)
                     if (targetId === 'page-analytics') {
                         setTimeout(renderCharts, 50);
                     }
                 });
             });
 
-            // 查看全部按鈕切換至明細頁
             const viewAllBtn = document.getElementById('view-all-records');
             if (viewAllBtn) {
                 viewAllBtn.addEventListener('click', () => {
@@ -769,9 +814,8 @@
             }
         }
 
-        // 初始化設定頁面事件
+        // 設定頁面事件
         function initSettingsEvents() {
-            // 儲存成員暱稱
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 const m1Val = document.getElementById('setting-member1').value.trim() || 'Sam';
                 const m2Val = document.getElementById('setting-member2').value.trim() || 'Even';
@@ -779,14 +823,12 @@
                 memberNames.m1 = m1Val;
                 memberNames.m2 = m2Val;
 
-                updateMemberNamesUI();
+                updateMemberUI();
                 saveData();
-
-                showToast('已更新成員設定並儲存');
+                showToast('已更新並同步成員設定');
                 renderApp();
             });
 
-            // 重置為預設範例資料
             document.getElementById('reset-demo-btn').addEventListener('click', () => {
                 records = [...defaultRecords];
                 saveData();
@@ -794,7 +836,6 @@
                 renderApp();
             });
 
-            // 清空所有紀錄
             document.getElementById('clear-all-btn').addEventListener('click', () => {
                 records = [];
                 saveData();
@@ -803,7 +844,7 @@
             });
         }
 
-        // 交易類型切換頁籤 (日常支出/收入/投資)
+        // 交易類型切換
         function initTypeSwitch() {
             const typeBtns = document.querySelectorAll('.type-btn');
             const typeInput = document.getElementById('entry-type');
@@ -837,7 +878,7 @@
             });
         }
 
-        // 顯示 Toast 訊息
+        // Toast 訊息提示
         function showToast(message) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').textContent = message;
@@ -845,14 +886,6 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0');
             }, 2500);
-        }
-
-        // 刪除帳務紀錄
-        function deleteRecord(id) {
-            records = records.filter(r => r.id !== id);
-            saveData(); // 自動儲存至 localStorage
-            showToast('已成功刪除紀錄');
-            renderApp();
         }
     </script>
 </body>
