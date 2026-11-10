@@ -1,748 +1,551 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="h-full bg-slate-50">
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>雙人同步記帳與投資理財 App</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* 隱藏滾動條但保持滾動 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* 防止手機雙擊縮放與過度滑動 */
-        body {
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>雙人共同記帳本</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter / Noto Sans TC -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* 隱藏滾動條但保持滾動 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
 </head>
-<body class="h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col max-w-md mx-auto shadow-2xl relative pb-20">
 
-    <div id="app" class="flex flex-col h-full max-w-md mx-auto w-full bg-slate-100 shadow-2xl relative overflow-hidden">
-        
-        <!-- 頂部 Header -->
-        <header class="bg-gradient-to-r from-brand-600 to-indigo-600 text-white px-5 pt-8 pb-4 rounded-b-3xl shadow-lg shrink-0">
-            <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center space-x-2">
-                    <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-                        <i class="fa-solid font-bold text-lg text-white">👫</i>
-                    </div>
-                    <div>
-                        <h1 class="text-xs font-medium text-brand-100 flex items-center gap-1">
-                            雙人共享賬本
-                            <span id="room-code-tag" class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono">未連線</span>
-                        </h1>
-                        <p class="text-sm font-bold tracking-wide" id="current-user-display">成員 A & 成員 B</p>
-                    </div>
-                </div>
-                <button onclick="openSyncModal()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 transition">
-                    <i class="fa-solid fa-cloud-arrow-up text-xs" id="sync-icon"></i>
-                    <span id="sync-status-badge">雲端同步</span>
-                </button>
-            </div>
+  <!-- 頂部 Header -->
+  <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 sticky top-0 z-30 shadow-md">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid font-bold fa-wallet text-xl text-emerald-200"></i>
+        <h1 class="text-lg font-bold tracking-wide">雙人共享記帳</h1>
+      </div>
+      <button id="btnSettings" class="p-2 text-emerald-100 hover:text-white rounded-full transition-colors focus:outline-none">
+        <i class="fa-solid fa-gear text-lg"></i>
+      </button>
+    </div>
+  </header>
 
-            <!-- 資產總覽卡片 -->
-            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 mt-2">
-                <div class="text-xs text-brand-100 mb-1">淨資產總額 (NT$)</div>
-                <div class="text-3xl font-black tracking-tight" id="total-net-worth">0</div>
-                
-                <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/10 text-xs">
-                    <div>
-                        <span class="text-brand-100 block">本月總收入</span>
-                        <span class="text-emerald-300 font-bold text-sm" id="month-income">+0</span>
-                    </div>
-                    <div>
-                        <span class="text-brand-100 block">本月總支出</span>
-                        <span class="text-rose-300 font-bold text-sm" id="month-expense">-0</span>
-                    </div>
-                </div>
-            </div>
-        </header>
+  <!-- 提示訊息 Modal (Alert modal replacement) -->
+  <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 hidden transition-all duration-300 w-11/12 max-w-xs">
+    <div id="toastBody" class="px-4 py-3 rounded-xl shadow-lg text-white font-medium text-sm text-center flex items-center justify-center space-x-2">
+      <i id="toastIcon" class="fa-solid fa-check-circle text-lg"></i>
+      <span id="toastMsg">成功寫入！</span>
+    </div>
+  </div>
 
-        <!-- 主要內容區域（可滾動） -->
-        <main class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-24" id="main-content">
-            
-            <!-- 頁籤一：收支明細 -->
-            <section id="tab-transactions" class="space-y-4">
-                <!-- 快速記帳與篩選 -->
-                <div class="flex justify-between items-center">
-                    <h2 class="font-bold text-slate-700 text-base">最新收支紀錄</h2>
-                    <div class="flex gap-2">
-                        <select id="filter-user" onchange="renderTransactions()" class="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none text-slate-600">
-                            <option value="all">所有人</option>
-                            <option value="me">成員 A</option>
-                            <option value="partner">成員 B</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 收支列表 -->
-                <div id="transaction-list" class="space-y-2.5">
-                    <!-- 動態載入 -->
-                </div>
-            </section>
-
-            <!-- 頁籤二：投資理財 -->
-            <section id="tab-investments" class="space-y-4 hidden">
-                <div class="flex justify-between items-center">
-                    <h2 class="font-bold text-slate-700 text-base">投資組合資產</h2>
-                    <button onclick="openInvestmentModal()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-3 py-1.5 rounded-xl shadow-sm transition">
-                        + 新增投資
-                    </button>
-                </div>
-
-                <!-- 投資統計卡片 -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
-                        <span class="text-xs text-slate-400 block mb-1">投資成本</span>
-                        <span class="text-lg font-bold text-slate-800" id="invest-cost">NT$ 0</span>
-                    </div>
-                    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100">
-                        <span class="text-xs text-slate-400 block mb-1">當前估值</span>
-                        <span class="text-lg font-bold text-emerald-600" id="invest-market">NT$ 0</span>
-                    </div>
-                </div>
-
-                <!-- 投資列表 -->
-                <div id="investment-list" class="space-y-2.5">
-                    <!-- 動態載入 -->
-                </div>
-            </section>
-
-            <!-- 頁籤三：統計報表 -->
-            <section id="tab-analytics" class="space-y-4 hidden">
-                <h2 class="font-bold text-slate-700 text-base">收支與投資分析</h2>
-                
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="text-xs font-bold text-slate-500 mb-3">本月支出分類</h3>
-                    <div class="h-48 flex justify-center items-center">
-                        <canvas id="expense-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="text-xs font-bold text-slate-500 mb-3">資產配置比例</h3>
-                    <div class="h-48 flex justify-center items-center">
-                        <canvas id="asset-chart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- 浮動新增按鈕 (快捷鍵) -->
-        <button onclick="openTransactionModal()" class="fixed bottom-20 right-6 md:right-auto md:translate-x-36 w-14 h-14 bg-gradient-to-r from-brand-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition z-20">
-            <i class="fa-solid fa-plus text-2xl"></i>
+  <!-- 設定 GAS URL Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-link text-emerald-600 mr-2"></i>設定 Google 網頁應用程式 URL</h3>
+        <button id="btnCloseSettings" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+        請貼上你部署 Google Apps Script 後取得的「Web App URL」，即可將資料同步寫入你與伴侶的 Google 試算表。
+      </p>
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" 
+        class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none mb-4 font-mono">
+      
+      <div class="flex space-x-2">
+        <button id="btnSaveUrl" class="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-xl text-sm shadow-md hover:bg-emerald-700 active:scale-95 transition-all">
+          儲存並連線
         </button>
+      </div>
+    </div>
+  </div>
 
-        <!-- 底部導覽列 Footer Navigation -->
-        <nav class="bg-white border-t border-slate-100 px-6 py-2.5 flex justify-between items-center shrink-0 z-10 shadow-lg">
-            <button onclick="switchTab('transactions')" id="nav-transactions" class="flex flex-col items-center gap-1 text-brand-600 transition">
-                <i class="fa-solid fa-receipt text-lg"></i>
-                <span class="text-[10px] font-medium">明細</span>
-            </button>
-            <button onclick="switchTab('investments')" id="nav-investments" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition">
-                <i class="fa-solid fa-chart-line text-lg"></i>
-                <span class="text-[10px] font-medium">理財</span>
-            </button>
-            <button onclick="switchTab('analytics')" id="nav-analytics" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 transition">
-                <i class="fa-solid fa-chart-pie text-lg"></i>
-                <span class="text-[10px] font-medium">統計</span>
-            </button>
-        </nav>
+  <!-- 主要內容區 -->
+  <main class="flex-1 p-4 space-x-0 space-y-4 overflow-y-auto no-scrollbar">
 
-        <!-- ===== 彈出模組 (Modals) ===== -->
-
-        <!-- 1. 新增收支 Modal -->
-        <div id="modal-transaction" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden">
-            <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 animate-slide-up">
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800">新增收支紀錄</h3>
-                    <button onclick="closeModal('modal-transaction')" class="text-slate-400 hover:text-slate-600">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <form id="form-transaction" onsubmit="saveTransaction(event)" class="space-y-3">
-                    <!-- 類型選擇 (支出/收入) -->
-                    <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
-                        <button type="button" id="btn-type-expense" onclick="setTxType('expense')" class="py-2 text-xs font-bold rounded-lg bg-white text-rose-500 shadow-sm">支出</button>
-                        <button type="button" id="btn-type-income" onclick="setTxType('income')" class="py-2 text-xs font-bold rounded-lg text-slate-500">收入</button>
-                    </div>
-
-                    <!-- 金額 -->
-                    <div>
-                        <label class="text-[11px] font-semibold text-slate-400 block mb-1">金額 (NT$)</label>
-                        <input type="number" id="tx-amount" step="any" required placeholder="0" class="w-full text-2xl font-bold p-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                    </div>
-
-                    <!-- 分類與成員 -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">分類</label>
-                            <select id="tx-category" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white outline-none">
-                                <option value="餐飲">🍔 餐飲</option>
-                                <option value="購物">🛍️ 購物</option>
-                                <option value="交通">🚗 交通</option>
-                                <option value="娛樂">🎮 娛樂</option>
-                                <option value="居家">🏠 居家房租</option>
-                                <option value="薪資">💰 薪資收入</option>
-                                <option value="其他">📦 其他</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">記錄者</label>
-                            <select id="tx-user" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white outline-none">
-                                <option value="成員 A">成員 A</option>
-                                <option value="成員 B">成員 B</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 備註 -->
-                    <div>
-                        <label class="text-[11px] font-semibold text-slate-400 block mb-1">備註說明</label>
-                        <input type="text" id="tx-note" placeholder="例如：午餐、全家超商..." class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                    </div>
-
-                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
-                        確認儲存
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- 2. 新增投資 Modal -->
-        <div id="modal-investment" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden">
-            <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800">新增投資理財項目</h3>
-                    <button onclick="closeModal('modal-investment')" class="text-slate-400 hover:text-slate-600">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <form id="form-investment" onsubmit="saveInvestment(event)" class="space-y-3">
-                    <div>
-                        <label class="text-[11px] font-semibold text-slate-400 block mb-1">投資標的名稱</label>
-                        <input type="text" id="inv-name" required placeholder="例如：台積電 (2330)、S&P 500 ETF" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">類型</label>
-                            <select id="inv-type" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white outline-none">
-                                <option value="股票">📈 股票/ETF</option>
-                                <option value="基金">📊 基金</option>
-                                <option value="加密貨幣">🪙 加密貨幣</option>
-                                <option value="定存">🏦 外幣/定存</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">持有人</label>
-                            <select id="inv-owner" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white outline-none">
-                                <option value="成員 A">成員 A</option>
-                                <option value="成員 B">成員 B</option>
-                                <option value="共同持有">共同持有</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">總投入成本 (NT$)</label>
-                            <input type="number" id="inv-cost" required step="any" placeholder="0" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-400 block mb-1">當前市值 (NT$)</label>
-                            <input type="number" id="inv-market" required step="any" placeholder="0" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:outline-none">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
-                        儲存投資項目
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- 3. 同步與房間設定 Modal -->
-        <div id="modal-sync" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4">
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800">雙人雲端即時同步設定</h3>
-                    <button onclick="closeModal('modal-sync')" class="text-slate-400 hover:text-slate-600">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <p class="text-xs text-slate-500 leading-relaxed">
-                    輸入相同的「共享代碼」，雙方手機即可完成實時連線同步！
-                </p>
-
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[11px] font-semibold text-slate-400 block mb-1">共享賬本代碼 (Room Code)</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="sync-room-input" placeholder="例如：LOVE2026" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none uppercase font-mono font-bold">
-                            <button onclick="generateRandomRoom()" class="bg-slate-100 text-slate-600 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-200 transition">隨機</button>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button onclick="connectToRoom()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
-                            連線並同步資料
-                        </button>
-                        <button onclick="forceRefreshData()" class="shrink-0 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold px-3 py-2.5 rounded-xl text-xs transition">
-                            <i class="fa-solid fa-rotate"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="sync-info-box" class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-700 flex justify-between items-center">
-                    <div>
-                        <i class="fa-solid fa-circle-check mr-1"></i> 已連線至雲端賬本：<span id="connected-room-name" class="font-mono font-bold">LOVE2026</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <!-- TAB 導覽切換 -->
+    <div class="flex bg-slate-200 p-1 rounded-xl font-medium text-sm text-slate-600">
+      <button id="tabAdd" class="flex-1 py-2 rounded-lg font-semibold bg-white text-emerald-700 shadow-sm transition-all text-center">
+        <i class="fa-solid fa-plus-circle mr-1"></i>快速記帳
+      </button>
+      <button id="tabDashboard" class="flex-1 py-2 rounded-lg font-semibold transition-all text-center">
+        <i class="fa-solid fa-chart-pie mr-1"></i>結算與看板
+      </button>
     </div>
 
-    <!-- Firebase Script & App Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Setup
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dual-ledger-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    <!-- 頁面 1: 快速記帳區塊 -->
+    <section id="sectionAdd" class="space-y-4">
+      <form id="recordForm" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
         
-        let db = null;
-        let auth = null;
-        let currentUser = null;
-        let unsubTx = null;
-        let unsubInv = null;
-        let currentRoomId = localStorage.getItem('dual_ledger_room') || 'LOVE2026';
+        <!-- 收支類型 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1 rounded-lg">類型</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="type" value="支出" checked class="peer hidden">
+              <div class="py-2.5 text-center text-sm font-semibold rounded-xl bg-slate-100 text-slate-600 peer-checked:bg-rose-500 peer-checked:text-white transition-all">
+                <i class="fa-solid fa-minus-circle mr-1"></i>支出
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="type" value="收入" class="peer hidden">
+              <div class="py-2.5 text-center text-sm font-semibold rounded-xl bg-slate-100 text-slate-600 peer-checked:bg-emerald-600 peer-checked:text-white transition-all">
+                <i class="fa-solid fa-plus-circle mr-1"></i>收入
+              </div>
+            </label>
+          </div>
+        </div>
 
-        // --- 應用程式狀態管理 ---
-        window.state = {
-            currentTab: 'transactions',
-            txType: 'expense',
-            transactions: [],
-            investments: []
-        };
+        <!-- 金額 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">金額 (NT$)</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
+            <input type="number" id="amount" required placeholder="0" step="any" inputmode="decimal"
+              class="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+          </div>
+        </div>
 
-        let expenseChart = null;
-        let assetChart = null;
+        <!-- 記帳人 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">誰付的錢？ (記帳人)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="payer" value="成員A" checked class="peer hidden">
+              <div class="py-2.5 text-center text-sm font-medium rounded-xl bg-slate-100 text-slate-700 peer-checked:bg-teal-700 peer-checked:text-white peer-checked:font-bold border border-transparent transition-all">
+                <i class="fa-solid fa-user-large mr-1 text-xs"></i>成員A
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="payer" value="成員B" class="peer hidden">
+              <div class="py-2.5 text-center text-sm font-medium rounded-xl bg-slate-100 text-slate-700 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:font-bold border border-transparent transition-all">
+                <i class="fa-solid fa-user-large mr-1 text-xs"></i>成員B
+              </div>
+            </label>
+          </div>
+        </div>
 
-        // 初始化 Firebase Auth 與 雲端監聽
-        async function initFirebase() {
-            if (!firebaseConfig) {
-                console.warn('Firebase config unavailable, running in local fallback mode.');
-                document.getElementById('sync-status-badge').innerText = '單機模式';
-                return;
-            }
+        <!-- 分帳模式 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">分帳模式</label>
+          <select id="splitMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="共同支出（各出一半）">🤝 共同支出 (各出一半)</option>
+            <option value="成員A 幫 成員B 全墊">💸 成員A 幫 成員B 全墊</option>
+            <option value="成員B 幫 成員A 全墊">💸 成員B 幫 成員A 全墊</option>
+            <option value="個人私用支出（不計入雙人分帳）">🔒 個人私用支出 (不分帳)</option>
+          </select>
+        </div>
 
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        <!-- 分類 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">分類</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-category="外食" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-emerald-50 border-emerald-500 text-emerald-700 font-bold">
+              🍔 外食
+            </button>
+            <button type="button" data-category="超市食材" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+              🛒 超市食材
+            </button>
+            <button type="button" data-category="日常用品" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+              🧻 日常用品
+            </button>
+            <button type="button" data-category="房租水電" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+              🏠 房租水電
+            </button>
+            <button type="button" data-category="娛樂" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+              🎬 娛樂
+            </button>
+            <button type="button" data-category="其他" class="cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+              📦 其他
+            </button>
+          </div>
+        </div>
 
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth error:", err);
-                await signInAnonymously(auth);
-            }
+        <!-- 日期 & 備註 -->
+        <div class="grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">日期</label>
+            <input type="date" id="date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">備註 (可填)</label>
+            <input type="text" id="note" placeholder="例：午餐便當、全聯買菜" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
 
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    subscribeToRoom(currentRoomId);
-                }
-            });
+        <!-- 送出按鈕 -->
+        <button type="submit" id="btnSubmit" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all text-base flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>送出記帳紀錄</span>
+        </button>
+
+      </form>
+    </section>
+
+    <!-- 頁面 2: 統計與分帳看板 -->
+    <section id="sectionDashboard" class="space-y-4 hidden">
+      
+      <!-- 重新整理按鈕區 -->
+      <div class="flex justify-between items-center px-1">
+        <span class="text-xs text-slate-500">最新即時數據</span>
+        <button id="btnRefresh" class="text-xs text-emerald-700 font-semibold flex items-center space-x-1 hover:underline active:opacity-75">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>重新整理</span>
+        </button>
+      </div>
+
+      <!-- 核心結算卡片 (最顯眼) -->
+      <div id="settlementCard" class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-xl space-y-3 relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl">
+          <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+
+        <div class="text-xs text-slate-400 font-medium tracking-wider uppercase">雙人分帳精算結果</div>
+        
+        <div id="settlementResult" class="py-2">
+          <div class="text-2xl font-black text-amber-300">計算中...</div>
+          <div class="text-xs text-slate-300 mt-1">請確認已於設定輸入 GAS Web App URL。</div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-700/60 flex justify-between text-xs text-slate-300">
+          <span>本月共同總支出:</span>
+          <span id="jointExpenseTotal" class="font-bold text-white">$ 0</span>
+        </div>
+      </div>
+
+      <!-- 個人付額小卡片 -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <div class="flex items-center space-x-1.5 text-xs text-teal-700 font-bold">
+            <span class="w-2 h-2 rounded-full bg-teal-600"></span>
+            <span>成員A 總付款</span>
+          </div>
+          <div id="payerATotal" class="text-xl font-bold text-slate-800">$ 0</div>
+          <div class="text-[10px] text-slate-400">含私用與全墊金額</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+          <div class="flex items-center space-x-1.5 text-xs text-indigo-600 font-bold">
+            <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+            <span>成員B 總付款</span>
+          </div>
+          <div id="payerBTotal" class="text-xl font-bold text-slate-800">$ 0</div>
+          <div class="text-[10px] text-slate-400">含私用與全墊金額</div>
+        </div>
+      </div>
+
+      <!-- 最新 10 筆明細清單 -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+        <h3 class="text-xs font-bold text-slate-500 tracking-wider">最近 10 筆記帳流水帳</h3>
+        
+        <div id="recentRecordsList" class="space-y-2.5">
+          <!-- 動態渲染流水帳 -->
+          <div class="text-center py-6 text-slate-400 text-xs">載入紀錄中...</div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // === 全局狀態管理 ===
+    let currentCategory = '外食';
+    let gasUrl = localStorage.getItem('ACCOUNTING_GAS_URL') || '';
+
+    // 初始化頁面
+    document.addEventListener('DOMContentLoaded', () => {
+      // 預設日期設為今天 (YYYY-MM-DD)
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value = today;
+
+      // 如果尚未設定 URL，自動彈出設定框
+      if (!gasUrl) {
+        document.getElementById('settingsModal').classList.remove('hidden');
+      } else {
+        document.getElementById('gasUrlInput').value = gasUrl;
+        fetchDashboardData();
+      }
+    });
+
+    // === TAB 切換邏輯 ===
+    const tabAdd = document.getElementById('tabAdd');
+    const tabDashboard = document.getElementById('tabDashboard');
+    const sectionAdd = document.getElementById('sectionAdd');
+    const sectionDashboard = document.getElementById('sectionDashboard');
+
+    tabAdd.addEventListener('click', () => {
+      tabAdd.className = 'flex-1 py-2 rounded-lg font-semibold bg-white text-emerald-700 shadow-sm transition-all text-center';
+      tabDashboard.className = 'flex-1 py-2 rounded-lg font-semibold transition-all text-center';
+      sectionAdd.classList.remove('hidden');
+      sectionDashboard.classList.add('hidden');
+    });
+
+    tabDashboard.addEventListener('click', () => {
+      tabDashboard.className = 'flex-1 py-2 rounded-lg font-semibold bg-white text-emerald-700 shadow-sm transition-all text-center';
+      tabAdd.className = 'flex-1 py-2 rounded-lg font-semibold transition-all text-center';
+      sectionDashboard.classList.remove('hidden');
+      sectionAdd.classList.add('hidden');
+      fetchDashboardData(); // 切換到看板時重新加載
+    });
+
+    // === 分類按鈕選取 ===
+    const catBtns = document.querySelectorAll('.cat-btn');
+    catBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catBtns.forEach(b => {
+          b.className = 'cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 text-slate-600';
+        });
+        btn.className = 'cat-btn py-2 px-1 text-center text-xs font-medium rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-bold';
+        currentCategory = btn.getAttribute('data-category');
+      });
+    });
+
+    // === 設定視窗控制 ===
+    document.getElementById('btnSettings').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseSettings').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.add('hidden');
+    });
+    document.getElementById('btnSaveUrl').addEventListener('click', () => {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      if (!url) {
+        showToast('請輸入有效的 URL', false);
+        return;
+      }
+      gasUrl = url;
+      localStorage.setItem('ACCOUNTING_GAS_URL', gasUrl);
+      document.getElementById('settingsModal').classList.add('hidden');
+      showToast('已成功連線設定！', true);
+      fetchDashboardData();
+    });
+
+    // === 表單送出 (新增記帳) ===
+    document.getElementById('recordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!gasUrl) {
+        showToast('請先設定 API 網址！', false);
+        document.getElementById('settingsModal').classList.remove('hidden');
+        return;
+      }
+
+      const type = document.querySelector('input[name="type"]:checked').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+      const payer = document.querySelector('input[name="payer"]:checked').value;
+      const splitMode = document.getElementById('splitMode').value;
+      const date = document.getElementById('date').value;
+      const note = document.getElementById('note').value.trim();
+
+      const payload = {
+        action: 'addRecord',
+        date,
+        type,
+        amount,
+        payer,
+        splitMode,
+        category: currentCategory,
+        note
+      };
+
+      const btnSubmit = document.getElementById('btnSubmit');
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('opacity-50');
+      btnSubmit.querySelector('span').innerText = '儲存中...';
+
+      try {
+        // 使用 fetch 發送 POST
+        const res = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' }, // GAS 避開 CORS 常用設置
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          showToast('寫入成功！', true);
+          document.getElementById('amount').value = '';
+          document.getElementById('note').value = '';
+        } else {
+          showToast('寫入失敗：' + result.message, false);
         }
+      } catch (err) {
+        console.error(err);
+        showToast('連線異常，請重新嘗試', false);
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50');
+        btnSubmit.querySelector('span').innerText = '送出記帳紀錄';
+      }
+    });
 
-        // 訂閱雲端房間資料
-        function subscribeToRoom(roomId) {
-            if (!db || !currentUser) return;
-            currentRoomId = roomId;
-            localStorage.setItem('dual_ledger_room', roomId);
+    // === 手動重新整理 ===
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      fetchDashboardData();
+    });
 
-            document.getElementById('room-code-tag').innerText = roomId;
-            document.getElementById('sync-room-input').value = roomId;
-            document.getElementById('sync-status-badge').innerText = '雲端已連線';
-            document.getElementById('sync-icon').className = 'fa-solid fa-cloud-check text-xs text-emerald-300';
-            document.getElementById('sync-info-box').classList.remove('hidden');
-            document.getElementById('connected-room-name').innerText = roomId;
+    // === 撈取後端統計與最新流水帳 ===
+    async function fetchDashboardData() {
+      if (!gasUrl) {
+        const resCard = document.getElementById('settlementResult');
+        resCard.innerHTML = `
+          <div class="text-xl font-bold text-amber-300">尚未連線 API</div>
+          <div class="text-xs text-slate-300 mt-1">請點選右上角 ⚙️ 設定 Google Web App URL。</div>
+        `;
+        document.getElementById('recentRecordsList').innerHTML = `
+          <div class="text-center py-6 text-slate-400 text-xs">請先設定 API 網址以載入雲端紀錄</div>
+        `;
+        return;
+      }
 
-            // 取消舊的監聽
-            if (unsubTx) unsubTx();
-            if (unsubInv) unsubInv();
+      const resCard = document.getElementById('settlementResult');
+      resCard.innerHTML = `<div class="text-sm text-amber-200 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i>即時試算與同步中...</div>`;
 
-            // 1. 監聽收支紀錄 (公共路徑符合規範)
-            const txColRef = collection(db, 'artifacts', appId, 'public', 'data', `tx_${roomId}`);
-            unsubTx = onSnapshot(txColRef, (snapshot) => {
-                const txs = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (!data.deleted) {
-                        txs.push({ id: doc.id, ...data });
-                    }
-                });
-                // JavaScript 記憶體排序 (新到舊)
-                txs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                window.state.transactions = txs;
-                renderAll();
-            }, (err) => console.error("Firestore tx snapshot error:", err));
-
-            // 2. 監聽投資紀錄
-            const invColRef = collection(db, 'artifacts', appId, 'public', 'data', `inv_${roomId}`);
-            unsubInv = onSnapshot(invColRef, (snapshot) => {
-                const invs = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (!data.deleted) {
-                        invs.push({ id: doc.id, ...data });
-                    }
-                });
-                window.state.investments = invs;
-                renderAll();
-            }, (err) => console.error("Firestore inv snapshot error:", err));
+      try {
+        const fetchUrl = gasUrl + (gasUrl.includes('?') ? '&' : '?') + `action=getSummary&t=${Date.now()}`;
+        const res = await fetch(fetchUrl, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
         }
+        
+        const data = await res.json();
 
-        // 連線至房間
-        window.connectToRoom = function() {
-            const inputRoom = document.getElementById('sync-room-input').value.trim().toUpperCase();
-            if(!inputRoom) return;
-            subscribeToRoom(inputRoom);
-            closeModal('modal-sync');
-        };
-
-        window.forceRefreshData = function() {
-            if (currentRoomId) {
-                subscribeToRoom(currentRoomId);
-            }
-        };
-
-        window.generateRandomRoom = function() {
-            const randomCode = 'ROOM-' + Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('sync-room-input').value = randomCode;
-        };
-
-        // --- 初始化頁面 ---
-        window.onload = function() {
-            initFirebase();
-            renderAll();
-        };
-
-        // --- 渲染主要邏輯 ---
-        function renderAll() {
-            renderTransactions();
-            renderInvestments();
-            calculateSummary();
-            if (!expenseChart || !assetChart) {
-                initCharts();
-            } else {
-                updateCharts();
-            }
+        if (data.status === 'success') {
+          renderDashboard(data);
+        } else {
+          resCard.innerHTML = `<div class="text-xs text-rose-300">讀取資料錯誤：${data.message || '未知錯誤'}</div>`;
         }
+      } catch (err) {
+        console.warn('GAS Fetch Notice:', err);
+        resCard.innerHTML = `
+          <div class="text-sm font-bold text-rose-300"><i class="fa-solid fa-triangle-exclamation mr-1"></i>連線至 Google 失敗</div>
+          <div class="text-[11px] text-slate-300 mt-1">請確認 Web App URL 是否正確且部署權限設為「所有人」。</div>
+        `;
+        document.getElementById('recentRecordsList').innerHTML = `
+          <div class="text-center py-4 text-slate-400 text-xs">無法讀取資料，請檢查 API 設定與網路連線。</div>
+        `;
+      }
+    }
 
-        // --- 頁籤切換 ---
-        window.switchTab = function(tabName) {
-            window.state.currentTab = tabName;
-            
-            document.getElementById('tab-transactions').classList.add('hidden');
-            document.getElementById('tab-investments').classList.add('hidden');
-            document.getElementById('tab-analytics').classList.add('hidden');
+    // === 渲染統計結果與流水帳 ===
+    function renderDashboard(data) {
+      const summary = data.summary;
+      
+      // 顯示個人總付額
+      document.getElementById('payerATotal').innerText = `$ ${summary.payerA_paid.toLocaleString()}`;
+      document.getElementById('payerBTotal').innerText = `$ ${summary.payerB_paid.toLocaleString()}`;
+      document.getElementById('jointExpenseTotal').innerText = `$ ${summary.joint_expense.toLocaleString()}`;
 
-            ['transactions', 'investments', 'analytics'].forEach(t => {
-                const btn = document.getElementById(`nav-${t}`);
-                if (btn) {
-                    btn.classList.remove('text-brand-600');
-                    btn.classList.add('text-slate-400');
-                }
-            });
+      // 核心分帳卡片渲染
+      const resCard = document.getElementById('settlementResult');
+      const net = summary.netBalance; // 關鍵正負差額: 正數代表 B 需給 A；負數代表 A 需給 B
 
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            const activeNav = document.getElementById(`nav-${tabName}`);
-            if (activeNav) {
-                activeNav.classList.remove('text-slate-400');
-                activeNav.classList.add('text-brand-600');
-            }
+      if (Math.abs(net) < 1) {
+        resCard.innerHTML = `
+          <div class="text-xl font-bold text-emerald-300">🎉 目前帳目完全平衡！</div>
+          <div class="text-xs text-slate-300 mt-1">兩人無須補貼任何金額。</div>
+        `;
+      } else if (net > 0) {
+        resCard.innerHTML = `
+          <div class="text-xs text-slate-300 mb-0.5">結算應支付：</div>
+          <div class="text-2xl font-black text-amber-300 tracking-wide">
+            成員B <span class="text-white text-base">應給</span> 成員A <span class="text-3xl text-emerald-400">$${Math.round(net).toLocaleString()}</span>
+          </div>
+        `;
+      } else {
+        resCard.innerHTML = `
+          <div class="text-xs text-slate-300 mb-0.5">結算應支付：</div>
+          <div class="text-2xl font-black text-amber-300 tracking-wide">
+            成員A <span class="text-white text-base">應給</span> 成員B <span class="text-3xl text-emerald-400">$${Math.round(Math.abs(net)).toLocaleString()}</span>
+          </div>
+        `;
+      }
 
-            if(tabName === 'analytics') {
-                updateCharts();
-            }
-        };
+      // 渲染最新 10 筆紀錄
+      const listElem = document.getElementById('recentRecordsList');
+      if (!data.recent || data.recent.length === 0) {
+        listElem.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">目前無任何記帳資料</div>`;
+        return;
+      }
 
-        // --- 總覽卡片數據計算 ---
-        function calculateSummary() {
-            let totalIncome = 0;
-            let totalExpense = 0;
-
-            window.state.transactions.forEach(tx => {
-                if(tx.type === 'income') totalIncome += Number(tx.amount);
-                if(tx.type === 'expense') totalExpense += Number(tx.amount);
-            });
-
-            let investMarketValue = window.state.investments.reduce((sum, inv) => sum + Number(inv.market), 0);
-            let netWorth = (totalIncome - totalExpense) + investMarketValue;
-
-            document.getElementById('total-net-worth').innerText = netWorth.toLocaleString();
-            document.getElementById('month-income').innerText = `+${totalIncome.toLocaleString()}`;
-            document.getElementById('month-expense').innerText = `-${totalExpense.toLocaleString()}`;
-        }
-
-        // --- 渲染收支明細 ---
-        window.renderTransactions = function() {
-            const listEl = document.getElementById('transaction-list');
-            const filterUser = document.getElementById('filter-user').value;
-
-            let filtered = window.state.transactions;
-            if(filterUser === 'me') filtered = filtered.filter(t => t.user === '成員 A');
-            if(filterUser === 'partner') filtered = filtered.filter(t => t.user === '成員 B');
-
-            if(filtered.length === 0) {
-                listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">尚無相關收支紀錄</div>`;
-                return;
-            }
-
-            listEl.innerHTML = filtered.map(tx => `
-                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl ${tx.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'} flex items-center justify-center font-bold text-lg">
-                            ${tx.type === 'income' ? '⇣' : '⇡'}
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-800">${tx.category} <span class="text-[10px] font-normal text-slate-400">(${tx.user})</span></div>
-                            <div class="text-[11px] text-slate-400">${tx.note || '無備註'}</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm font-extrabold ${tx.type === 'income' ? 'text-emerald-600' : 'text-slate-800'}">
-                            ${tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toLocaleString()}
-                        </div>
-                        <button onclick="deleteTransaction('${tx.id}')" class="text-[10px] text-slate-300 hover:text-rose-500 transition">刪除</button>
-                    </div>
+      let html = '';
+      data.recent.forEach(item => {
+        const isExp = item.type === '支出';
+        const badgeColor = item.payer === '成員A' ? 'bg-teal-100 text-teal-800' : 'bg-indigo-100 text-indigo-800';
+        
+        html += `
+          <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs ${isExp ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}">
+                <i class="fa-solid ${getCategoryIcon(item.category)}"></i>
+              </div>
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-xs font-bold text-slate-800">${item.category}</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${badgeColor}">${item.payer}</span>
                 </div>
-            `).join('');
-        };
+                <div class="text-[10px] text-slate-400">${item.date} ${item.note ? '• ' + item.note : ''}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-bold ${isExp ? 'text-slate-800' : 'text-emerald-600'}">
+                ${isExp ? '-' : '+'}$${Number(item.amount).toLocaleString()}
+              </div>
+              <div class="text-[9px] text-slate-400">${item.splitMode.split('（')[0]}</div>
+            </div>
+          </div>
+        `;
+      });
+      listElem.innerHTML = html;
+    }
 
-        // --- 渲染投資列表 ---
-        function renderInvestments() {
-            const listEl = document.getElementById('investment-list');
-            let totalCost = 0;
-            let totalMarket = 0;
+    // 分類圖示輔助函式
+    function getCategoryIcon(cat) {
+      switch(cat) {
+        case '外食': return 'fa-utensils';
+        case '超市食材': return 'fa-cart-shopping';
+        case '日常用品': return 'fa-toilet-paper';
+        case '房租水電': return 'fa-house';
+        case '娛樂': return 'fa-film';
+        default: return 'fa-box';
+      }
+    }
 
-            window.state.investments.forEach(inv => {
-                totalCost += Number(inv.cost);
-                totalMarket += Number(inv.market);
-            });
+    // === Toast 動態提示 ===
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastBody = document.getElementById('toastBody');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMsg = document.getElementById('toastMsg');
 
-            document.getElementById('invest-cost').innerText = `NT$ ${totalCost.toLocaleString()}`;
-            document.getElementById('invest-market').innerText = `NT$ ${totalMarket.toLocaleString()}`;
+      toastMsg.innerText = msg;
+      if (isSuccess) {
+        toastBody.className = 'px-4 py-3 rounded-xl shadow-lg text-white font-medium text-sm text-center flex items-center justify-center space-x-2 bg-emerald-600';
+        toastIcon.className = 'fa-solid fa-check-circle text-lg';
+      } else {
+        toastBody.className = 'px-4 py-3 rounded-xl shadow-lg text-white font-medium text-sm text-center flex items-center justify-center space-x-2 bg-rose-600';
+        toastIcon.className = 'fa-solid fa-circle-exclamation text-lg';
+      }
 
-            if(window.state.investments.length === 0) {
-                listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">尚無投資項目</div>`;
-                return;
-            }
-
-            listEl.innerHTML = window.state.investments.map(inv => {
-                let profit = inv.market - inv.cost;
-                let rate = inv.cost > 0 ? ((profit / inv.cost) * 100).toFixed(1) : 0;
-                let isPositive = profit >= 0;
-
-                return `
-                    <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                        <div>
-                            <div class="text-xs font-bold text-slate-800">${inv.name}</div>
-                            <div class="text-[10px] text-slate-400">${inv.type} · 持有：${inv.owner}</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xs font-bold text-slate-800">NT$ ${Number(inv.market).toLocaleString()}</div>
-                            <div class="text-[10px] font-semibold ${isPositive ? 'text-emerald-500' : 'text-rose-500'}">
-                                ${isPositive ? '+' : ''}${profit.toLocaleString()} (${rate}%)
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // --- 新增 / 刪除 收支與投資 (寫入 Firebase) ---
-        window.setTxType = function(type) {
-            window.state.txType = type;
-            const btnExpense = document.getElementById('btn-type-expense');
-            const btnIncome = document.getElementById('btn-type-income');
-
-            if(type === 'expense') {
-                btnExpense.className = "py-2 text-xs font-bold rounded-lg bg-white text-rose-500 shadow-sm";
-                btnIncome.className = "py-2 text-xs font-bold rounded-lg text-slate-500";
-            } else {
-                btnIncome.className = "py-2 text-xs font-bold rounded-lg bg-white text-emerald-600 shadow-sm";
-                btnExpense.className = "py-2 text-xs font-bold rounded-lg text-slate-500";
-            }
-        };
-
-        window.saveTransaction = async function(e) {
-            e.preventDefault();
-            const amount = document.getElementById('tx-amount').value;
-            const category = document.getElementById('tx-category').value;
-            const user = document.getElementById('tx-user').value;
-            const note = document.getElementById('tx-note').value;
-
-            if(!amount) return;
-
-            const newId = Date.now().toString();
-            const newItem = {
-                type: window.state.txType,
-                amount: Number(amount),
-                category: category,
-                user: user,
-                note: note,
-                date: new Date().toISOString()
-            };
-
-            if (db && currentUser) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', `tx_${currentRoomId}`, newId);
-                await setDoc(docRef, newItem);
-            } else {
-                window.state.transactions.unshift({ id: newId, ...newItem });
-                renderAll();
-            }
-
-            closeModal('modal-transaction');
-            document.getElementById('form-transaction').reset();
-        };
-
-        window.deleteTransaction = async function(id) {
-            if (db && currentUser) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', `tx_${currentRoomId}`, id);
-                await deleteDoc(docRef);
-            } else {
-                window.state.transactions = window.state.transactions.filter(t => t.id !== id);
-                renderAll();
-            }
-        };
-
-        window.saveInvestment = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('inv-name').value;
-            const type = document.getElementById('inv-type').value;
-            const owner = document.getElementById('inv-owner').value;
-            const cost = document.getElementById('inv-cost').value;
-            const market = document.getElementById('inv-market').value;
-
-            const newId = Date.now().toString();
-            const newItem = {
-                name, type, owner,
-                cost: Number(cost),
-                market: Number(market)
-            };
-
-            if (db && currentUser) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', `inv_${currentRoomId}`, newId);
-                await setDoc(docRef, newItem);
-            } else {
-                window.state.investments.push({ id: newId, ...newItem });
-                renderAll();
-            }
-
-            closeModal('modal-investment');
-            document.getElementById('form-investment').reset();
-        };
-
-        // --- Modal 控制 ---
-        window.openTransactionModal = function() {
-            document.getElementById('modal-transaction').classList.remove('hidden');
-        };
-
-        window.openInvestmentModal = function() {
-            document.getElementById('modal-investment').classList.remove('hidden');
-        };
-
-        window.openSyncModal = function() {
-            document.getElementById('modal-sync').classList.remove('hidden');
-        };
-
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.add('hidden');
-        };
-
-        // --- Chart.js 統計圖表 ---
-        function initCharts() {
-            const ctx1 = document.getElementById('expense-chart').getContext('2d');
-            const ctx2 = document.getElementById('asset-chart').getContext('2d');
-
-            expenseChart = new Chart(ctx1, {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#f43f5e', '#3b82f6', '#eab308', '#a855f7', '#10b981'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-            });
-
-            assetChart = new Chart(ctx2, {
-                type: 'pie',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-            });
-        }
-
-        function updateCharts() {
-            if(!expenseChart || !assetChart) return;
-            // 1. 支出統計
-            const categories = {};
-            window.state.transactions.filter(t => t.type === 'expense').forEach(t => {
-                categories[t.category] = (categories[t.category] || 0) + Number(t.amount);
-            });
-
-            expenseChart.data.labels = Object.keys(categories);
-            expenseChart.data.datasets[0].data = Object.values(categories);
-            expenseChart.update();
-
-            // 2. 資產配置
-            const assetTypes = {};
-            window.state.investments.forEach(i => {
-                assetTypes[i.type] = (assetTypes[i.type] || 0) + Number(i.market);
-            });
-
-            assetChart.data.labels = Object.keys(assetTypes);
-            assetChart.data.datasets[0].data = Object.values(assetTypes);
-            assetChart.update();
-        }
-    </script>
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+  </script>
 </body>
 </html>
