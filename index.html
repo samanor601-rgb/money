@@ -312,18 +312,25 @@
                     <div>
                         <label class="text-[11px] font-semibold text-slate-400 block mb-1">共享賬本代碼 (Room Code)</label>
                         <div class="flex gap-2">
-                            <input type="text" id="sync-room-input" placeholder="例如：our-ledger-888" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none uppercase font-mono font-bold">
+                            <input type="text" id="sync-room-input" placeholder="例如：LOVE2026" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none uppercase font-mono font-bold">
                             <button onclick="generateRandomRoom()" class="bg-slate-100 text-slate-600 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-200 transition">隨機</button>
                         </div>
                     </div>
 
-                    <button onclick="connectToRoom()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
-                        連線並同步資料
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="connectToRoom()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
+                            連線並同步資料
+                        </button>
+                        <button onclick="forceRefreshData()" class="shrink-0 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold px-3 py-2.5 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div id="sync-info-box" class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-700 hidden">
-                    <i class="fa-solid fa-circle-check mr-1"></i> 已連線至雲端賬本：<span id="connected-room-name" class="font-mono font-bold"></span>
+                <div id="sync-info-box" class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-xs text-emerald-700 flex justify-between items-center">
+                    <div>
+                        <i class="fa-solid fa-circle-check mr-1"></i> 已連線至雲端賬本：<span id="connected-room-name" class="font-mono font-bold">LOVE2026</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -334,7 +341,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Setup
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'dual-ledger-app';
@@ -345,7 +352,7 @@
         let currentUser = null;
         let unsubTx = null;
         let unsubInv = null;
-        let currentRoomId = 'LOVE2026';
+        let currentRoomId = localStorage.getItem('dual_ledger_room') || 'LOVE2026';
 
         // --- 應用程式狀態管理 ---
         window.state = {
@@ -393,8 +400,10 @@
         function subscribeToRoom(roomId) {
             if (!db || !currentUser) return;
             currentRoomId = roomId;
+            localStorage.setItem('dual_ledger_room', roomId);
 
             document.getElementById('room-code-tag').innerText = roomId;
+            document.getElementById('sync-room-input').value = roomId;
             document.getElementById('sync-status-badge').innerText = '雲端已連線';
             document.getElementById('sync-icon').className = 'fa-solid fa-cloud-check text-xs text-emerald-300';
             document.getElementById('sync-info-box').classList.remove('hidden');
@@ -404,14 +413,17 @@
             if (unsubTx) unsubTx();
             if (unsubInv) unsubInv();
 
-            // 1. 監聽收支紀錄
+            // 1. 監聽收支紀錄 (公共路徑符合規範)
             const txColRef = collection(db, 'artifacts', appId, 'public', 'data', `tx_${roomId}`);
             unsubTx = onSnapshot(txColRef, (snapshot) => {
                 const txs = [];
                 snapshot.forEach(doc => {
-                    txs.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    if (!data.deleted) {
+                        txs.push({ id: doc.id, ...data });
+                    }
                 });
-                // JavaScript 排序 (新到舊)
+                // JavaScript 記憶體排序 (新到舊)
                 txs.sort((a, b) => new Date(b.date) - new Date(a.date));
                 window.state.transactions = txs;
                 renderAll();
@@ -422,7 +434,10 @@
             unsubInv = onSnapshot(invColRef, (snapshot) => {
                 const invs = [];
                 snapshot.forEach(doc => {
-                    invs.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    if (!data.deleted) {
+                        invs.push({ id: doc.id, ...data });
+                    }
                 });
                 window.state.investments = invs;
                 renderAll();
@@ -435,6 +450,12 @@
             if(!inputRoom) return;
             subscribeToRoom(inputRoom);
             closeModal('modal-sync');
+        };
+
+        window.forceRefreshData = function() {
+            if (currentRoomId) {
+                subscribeToRoom(currentRoomId);
+            }
         };
 
         window.generateRandomRoom = function() {
@@ -631,7 +652,7 @@
         window.deleteTransaction = async function(id) {
             if (db && currentUser) {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', `tx_${currentRoomId}`, id);
-                await setDoc(docRef, { deleted: true }, { merge: true }); // 或直接清理
+                await deleteDoc(docRef);
             } else {
                 window.state.transactions = window.state.transactions.filter(t => t.id !== id);
                 renderAll();
