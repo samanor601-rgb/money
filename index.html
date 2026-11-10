@@ -54,7 +54,12 @@
                     </div>
                     <div>
                         <h1 class="text-xs text-indigo-200">智慧理財記帳</h1>
-                        <p class="text-sm font-semibold">Sam & Even 的理財記帳</p>
+                        <p class="text-sm font-semibold flex items-center gap-1.5">
+                            Sam & Even 的理財記帳
+                            <span id="cloud-status-badge" class="text-[10px] bg-indigo-500/80 px-2 py-0.5 rounded-full font-normal border border-indigo-400/30 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block animate-pulse"></span> 連線中...
+                            </span>
+                        </p>
                     </div>
                 </div>
                 
@@ -193,6 +198,23 @@
                         <button id="save-settings-btn" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow transition active:scale-95">
                             儲存成員稱呼
                         </button>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <!-- 雲端同步設定 -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-700 flex justify-between items-center">
+                            <span>☁️ 跨裝置家庭同步設定</span>
+                            <span id="sync-status-text" class="text-[11px] font-normal text-amber-600">未連線</span>
+                        </label>
+                        <p class="text-[11px] text-slate-500">輸入相同的家庭同步代碼，即可讓 Sam 和 Even 的手機即時共享同一本帳冊。</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="setting-sync-id" value="sam-even-family" placeholder="輸入同步頻道名稱" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
+                            <button id="connect-sync-btn" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition active:scale-95 flex items-center gap-1">
+                                <i class="fa-solid fa-link"></i> 連結同步
+                            </button>
+                        </div>
                     </div>
 
                     <hr class="border-slate-100">
@@ -355,14 +377,19 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase 預設設定
+        // Firebase 通用連線參數
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
-            : { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+            : {
+                apiKey: "",
+                authDomain: "sam-even-finance.firebaseapp.com",
+                projectId: "sam-even-finance",
+                storageBucket: "sam-even-finance.appspot.com"
+            };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sam-even-finance-app';
+        let currentAppId = localStorage.getItem('sam_even_sync_id') || (typeof __app_id !== 'undefined' ? __app_id : 'sam-even-family-shared');
         
-        let app, db, auth;
+        let app, db, auth, unsubscribeListener = null;
         let isCloudConnected = false;
 
         // 預設示範資料
@@ -384,23 +411,59 @@
         let expenseChart = null;
         let assetChart = null;
 
-        // 初始化 Firebase 與雲端即時同步
-        async function initFirebaseSync() {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
+        // 更新頂部雲端指示燈狀態
+        function updateCloudBadge(status, msg) {
+            const badge = document.getElementById('cloud-status-badge');
+            const syncStatusText = document.getElementById('sync-status-text');
+            
+            if (status === 'connected') {
+                isCloudConnected = true;
+                if (badge) {
+                    badge.className = "text-[10px] bg-emerald-500/90 text-white px-2 py-0.5 rounded-full font-normal flex items-center gap-1 shadow-sm";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span> 🟢 雲端同步中`;
+                }
+                if (syncStatusText) {
+                    syncStatusText.className = "text-[11px] font-bold text-emerald-600";
+                    syncStatusText.textContent = `🟢 已成功連線頻道 (${currentAppId})`;
+                }
+            } else if (status === 'offline') {
+                isCloudConnected = false;
+                if (badge) {
+                    badge.className = "text-[10px] bg-amber-500/90 text-white px-2 py-0.5 rounded-full font-normal flex items-center gap-1 shadow-sm";
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span> 🟡 離線單機模式`;
+                }
+                if (syncStatusText) {
+                    syncStatusText.className = "text-[11px] font-bold text-amber-600";
+                    syncStatusText.textContent = `🟡 離線單機運作中`;
+                }
+            }
+        }
 
-                // 進行身份認證
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+        // 初始化 Firebase 與雲端即時同步
+        async function initFirebaseSync(syncId = currentAppId) {
+            try {
+                if (unsubscribeListener) unsubscribeListener();
+
+                if (!app) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    // 進行身份認證
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
                 }
 
-                // 訂閱雲端資料庫更新 (遵守偶數層級路徑規範)
-                const docRef = doc(db, 'artifacts', appId, 'public_data', 'financeDoc');
-                onSnapshot(docRef, (snapshot) => {
+                currentAppId = syncId;
+                localStorage.setItem('sam_even_sync_id', currentAppId);
+
+                // 訂閱雲端資料庫更新 (遵守偶數層級路徑規範: artifacts/{appId}/public_data/financeDoc)
+                const docRef = doc(db, 'artifacts', currentAppId, 'public_data', 'financeDoc');
+                
+                unsubscribeListener = onSnapshot(docRef, (snapshot) => {
                     if (snapshot.exists()) {
                         const data = snapshot.data();
                         if (data.records) records = data.records;
@@ -410,17 +473,19 @@
                         }
                         renderApp();
                     } else {
-                        // 初始化雲端資料
+                        // 初始化雲端資料庫
                         saveToCloud();
                     }
-                    isCloudConnected = true;
+                    updateCloudBadge('connected');
                 }, (error) => {
-                    console.warn("Firestore 監聽失敗，改用本地儲存:", error);
+                    console.warn("Firestore 監聽異常，退回本地單機模式:", error);
+                    updateCloudBadge('offline');
                     loadLocalData();
                 });
 
             } catch (err) {
-                console.warn("Firebase 初始化異常:", err);
+                console.warn("Firebase 初始化失敗，使用離線單機模式:", err);
+                updateCloudBadge('offline');
                 loadLocalData();
             }
         }
@@ -432,7 +497,7 @@
 
             if (isCloudConnected && db) {
                 try {
-                    const docRef = doc(db, 'artifacts', appId, 'public_data', 'financeDoc');
+                    const docRef = doc(db, 'artifacts', currentAppId, 'public_data', 'financeDoc');
                     await setDoc(docRef, {
                         records: records,
                         memberNames: memberNames,
@@ -480,6 +545,9 @@
             const inputM2 = document.getElementById('setting-member2');
             if (inputM1) inputM1.value = memberNames.m1;
             if (inputM2) inputM2.value = memberNames.m2;
+
+            const syncInput = document.getElementById('setting-sync-id');
+            if (syncInput) syncInput.value = currentAppId;
         }
 
         // 初始化頁面與事件
@@ -828,6 +896,20 @@
                 showToast('已更新並同步成員設定');
                 renderApp();
             });
+
+            // 手動連結/切換雲端同步頻道
+            const connectBtn = document.getElementById('connect-sync-btn');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', () => {
+                    const syncInputVal = document.getElementById('setting-sync-id').value.trim();
+                    if (!syncInputVal) {
+                        showToast('請輸入有效的同步頻道名稱');
+                        return;
+                    }
+                    initFirebaseSync(syncInputVal);
+                    showToast(`已切換至頻道: ${syncInputVal}`);
+                });
+            }
 
             document.getElementById('reset-demo-btn').addEventListener('click', () => {
                 records = [...defaultRecords];
